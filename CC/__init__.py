@@ -1,0 +1,1 @@
+from .map_terminal_license import CC
