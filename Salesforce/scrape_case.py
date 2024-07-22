@@ -5,7 +5,7 @@ from datetime import date, timedelta
 class ScrapeCaseData:
     def scrape_case_data(self, salesforcePage, caseNumber, serial_numbers_str, rental, mm_swap):
         self.get_case(salesforcePage, caseNumber, rental, mm_swap)
-        
+
         web_component = None
         soup = None
         customer_info = {}
