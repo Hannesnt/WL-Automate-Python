@@ -13,7 +13,7 @@ class DHLWaybill:
 
         self.print_label_dhl(dhl_page)
 
-        if customer_info["subject"] == "ST" or customer_info["subject"] == "MMSW":
+        if customer_info["subject"] == "ST" or customer_info["subject"] == "MMSW" or customer_info["subject"] == "SR":
             dhl_return_label = default_context.new_page()
             dhl_return_label.goto("https://mydhl.express.dhl/se/sv/home.html?login=successful#/createNewShipmentTab")
             self.add_customer_data_dhl(dhl_return_label, customer_info, True)
@@ -38,7 +38,7 @@ class DHLWaybill:
 
     def shipment_reference_dhl(self, dhl_page, customer_info, serialNumbers, caseNumber, return_waybill):
         dhl_page.get_by_placeholder("Referens (kommer synas på").click()
-        if customer_info['subject'] == "ST" or customer_info['subject'] == "MMSW":
+        if customer_info['subject'] == "ST" or customer_info['subject'] == "MMSW" or customer_info["subject"] == "SR":
             if return_waybill == True:
                 dhl_page.get_by_placeholder("Referens (kommer synas på").fill(f"{customer_info['country'][0]}{customer_info['country'][1]} R {customer_info['subject']} {len(serialNumbers)} {customer_info['model'][0]} - {caseNumber}")
             else:
@@ -62,8 +62,12 @@ class DHLWaybill:
         dhl_page.get_by_label("Företag Har du inget företagsnamn - använd ett namn Företag är obligatoriskt om").click()
         dhl_page.get_by_label("Företag Har du inget företagsnamn - använd ett namn Företag är obligatoriskt om").fill(customer_info['name'])
         dhl_page.get_by_label("Land/Territorium Ogiltigt vä").click()
-        dhl_page.get_by_label("Land/Territorium Afghanistan").fill("nor")
-        dhl_page.get_by_role("option", name="Norway").locator("a").click()
+        if customer_info['country'] == "SE":
+            dhl_page.get_by_label("Land/Territorium Afghanistan").fill("swe")
+            dhl_page.get_by_role("option", name="Sweden").locator("a").click()
+        else:
+            dhl_page.get_by_label("Land/Territorium Afghanistan").fill("nor")
+            dhl_page.get_by_role("option", name="Norway").locator("a").click()
         dhl_page.get_by_label("Adress Obligatorisk").click()
         dhl_page.get_by_label("Adress Obligatorisk").fill(customer_info["address"])
         dhl_page.get_by_label("Ogiltigt").click()

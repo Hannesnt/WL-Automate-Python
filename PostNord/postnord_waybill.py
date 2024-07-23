@@ -16,7 +16,7 @@ class PostNordWaybill:
         self.label_amount_postnord(unifaunPage, serialNumbers)
 
         unifaunPage.get_by_role("button", name="Print PDF").nth(1).click()
-        if customer_info["subject"] == "ST" or customer_info["subject"] == "MMSW":
+        if customer_info["subject"] == "ST" or customer_info["subject"] == "MMSW" or customer_info["subject"] == "SR":
             return_label_page = default_context.new_page()
             return_label_page.goto("https://www.unifaunonline.com/jsapp/uo/start")
             time.sleep(2)
@@ -55,7 +55,7 @@ class PostNordWaybill:
 
     def shipment_reference_postnord(self, unifaunPage, customer_info, serialNumbers, caseNumber, return_label):
         unifaunPage.locator("input[name=\"ShipmentSndReference\"]").click()
-        if customer_info['subject'] == "ST" or customer_info["subject"] == "MMSW":
+        if customer_info['subject'] == "ST" or customer_info["subject"] == "MMSW" or customer_info["subject"] == "SR":
             if return_label == False:
                 unifaunPage.locator("input[name=\"ShipmentSndReference\"]").fill(f"{customer_info['country'][0]}{customer_info['country'][1]} {customer_info['subject']} {len(serialNumbers)} {customer_info['model'][0]} - {caseNumber}")
                 unifaunPage.locator("input[name=\"AddonsPRENOT\"]").check()
