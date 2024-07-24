@@ -3,36 +3,38 @@ class DHLWaybill:
         
         self.add_customer_data_dhl(dhl_page, customer_info, False)
 
-        self.goods_description_dhl(dhl_page, serialNumbers)
+        if customer_info['country'] == "NO":
+            self.goods_description_dhl(dhl_page, serialNumbers, customer_info)
 
         self.dhl_label_amount(dhl_page, serialNumbers)
 
         self.shipment_reference_dhl(dhl_page, customer_info, serialNumbers, caseNumber, False)
+        if customer_info['country'] == "NO":
+            self.dhl_label_amount_dangerous_goods(dhl_page, customer_info, serialNumbers)
 
-        self.dhl_label_amount_dangerous_goods(dhl_page, customer_info, serialNumbers)
-
-        self.print_label_dhl(dhl_page)
+        self.print_label_dhl(dhl_page, customer_info)
 
         if customer_info["subject"] == "ST" or customer_info["subject"] == "MMSW" or customer_info["subject"] == "SR":
             dhl_return_label = default_context.new_page()
             dhl_return_label.goto("https://mydhl.express.dhl/se/sv/home.html?login=successful#/createNewShipmentTab")
             self.add_customer_data_dhl(dhl_return_label, customer_info, True)
-
-            self.goods_description_dhl(dhl_return_label, serialNumbers)
+            if customer_info['country'] == "NO":
+                self.goods_description_dhl(dhl_return_label, serialNumbers)
 
             self.dhl_label_amount(dhl_return_label, serialNumbers)
 
             self.shipment_reference_dhl(dhl_return_label, customer_info, serialNumbers, caseNumber, True)
+            if customer_info['country'] == "NO":
+                self.dhl_label_amount_dangerous_goods(dhl_return_label, customer_info, serialNumbers)
 
-            self.dhl_label_amount_dangerous_goods(dhl_return_label, customer_info, serialNumbers)
-
-            self.print_label_dhl(dhl_return_label)
+            self.print_label_dhl(dhl_return_label, customer_info)
 
 
-    def print_label_dhl(self, dhl_page):
+    def print_label_dhl(self, dhl_page, customer_info):
         dhl_page.locator("#ewfc-submit-blocker-element").get_by_text("Nej").click()
         dhl_page.get_by_role("button", name="Godkänn och fortsätt").click()
-        dhl_page.get_by_text("Skicka in", exact=True).click()
+        if customer_info['country'] == "NO":
+            dhl_page.get_by_text("Skicka in", exact=True).click()
         dhl_page.get_by_text("Kvitto").click()
         dhl_page.get_by_role("button", name=" Skriv ut fraktsedel").click()
 
@@ -45,7 +47,8 @@ class DHLWaybill:
                 dhl_page.get_by_placeholder("Referens (kommer synas på").fill(f"{customer_info['country'][0]}{customer_info['country'][1]} {customer_info['subject']} {len(serialNumbers)} {customer_info['model'][0]} - {caseNumber}")
         else:
             dhl_page.get_by_placeholder("Referens (kommer synas på").fill(f"{customer_info['country'][0]}{customer_info['country'][1]} {customer_info['subject'][0]} {len(serialNumbers)} {customer_info['model'][0]} - {caseNumber}")
-        dhl_page.get_by_label("Välj handelsvillkor Se").select_option("DDP")
+        if customer_info['country'] == "NO":
+            dhl_page.get_by_label("Välj handelsvillkor Se").select_option("DDP")
         dhl_page.get_by_text("Välj", exact=True).nth(1).click()
 
     def goods_description_dhl(self, dhl_page, serialNumbers):
@@ -62,9 +65,15 @@ class DHLWaybill:
         dhl_page.get_by_label("Företag Har du inget företagsnamn - använd ett namn Företag är obligatoriskt om").click()
         dhl_page.get_by_label("Företag Har du inget företagsnamn - använd ett namn Företag är obligatoriskt om").fill(customer_info['name'])
         dhl_page.get_by_label("Land/Territorium Ogiltigt vä").click()
-        if customer_info['country'] == "SE":
+        if customer_info['country'] == "SE" or customer_info['country'] == "SWE":
             dhl_page.get_by_label("Land/Territorium Afghanistan").fill("swe")
             dhl_page.get_by_role("option", name="Sweden").locator("a").click()
+        elif customer_info['country'] == "DK":
+            dhl_page.get_by_label("Land/Territorium Afghanistan").fill("denmar")
+            dhl_page.get_by_role("option", name="Denmark").locator("a").click()
+        elif customer_info['country'] == "FI":
+            dhl_page.get_by_label("Land/Territorium Afghanistan").fill("finl")
+            dhl_page.get_by_role("option", name="Finland").locator("a").click()
         else:
             dhl_page.get_by_label("Land/Territorium Afghanistan").fill("nor")
             dhl_page.get_by_role("option", name="Norway").locator("a").click()
@@ -77,8 +86,13 @@ class DHLWaybill:
         dhl_page.get_by_role("textbox", name="E-postadress", exact=True).click()
         dhl_page.get_by_role("textbox", name="E-postadress", exact=True).fill(customer_info["email"])
         truncatedPhoneNumber = customer_info["phone"][3:]
-        dhl_page.get_by_placeholder("__ __ __ _______").click()
-        dhl_page.get_by_placeholder("__ __ __ _______").fill(f"{truncatedPhoneNumber}____")
+        if customer_info['country'] == "SE": 
+            dhl_page.get_by_label("Telefon Obligatorisk").click()
+            dhl_page.get_by_label("Telefon Obligatorisk").fill(f"{truncatedPhoneNumber}____")
+
+        else:
+            dhl_page.get_by_placeholder("__ __ __ _______").click()
+            dhl_page.get_by_placeholder("__ __ __ _______").fill(f"{truncatedPhoneNumber}____")
         if return_waybill:
             dhl_page.get_by_role("button", name=" Skifta").click()
 

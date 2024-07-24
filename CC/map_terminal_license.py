@@ -34,11 +34,14 @@ class CC:
             except:
                 print("Couldnt fetch cc")
 
-        #if customer_info['keepAlive'] == False:
         self.change_terminal_stock(ccPage, customer_info, serialNumbers[0])
         time.sleep(2)
-            #self.change_terminal_stock(ccPage, customer_info, customer_info['serialNumber'])
+
         if customer_info['keepAlive'] == False:
+            ccPage.get_by_placeholder("Search here").click()
+            ccPage.get_by_placeholder("Search here").fill(customer_info['serialNumber'])
+            time.sleep(2)
+            ccPage.get_by_placeholder("Search here").press("Enter")
             ccPage.get_by_role("button", name="Logistics").click()
             ccPage.get_by_role("link", name="Swap").click()
             ccPage.locator("#SwapTerminal").get_by_role("textbox").click()
@@ -50,6 +53,8 @@ class CC:
             ccPage.get_by_role("combobox").nth(1).select_option("Merchant")
             ccPage.get_by_label("", exact=True).click()
             ccPage.locator("input[type=\"search\"]").fill(customer_info['accountNumber'])
+            time.sleep(4)
+            ccPage.locator("input[type=\"search\"]").press("Enter")
             ccPage.get_by_role("button", name="Deliver").click()
             time.sleep(2)
             ccPage.get_by_role("button", name="Actions").click()
@@ -62,8 +67,8 @@ class CC:
     def change_terminal_stock(self, ccPage, customer_info, serialNumber):
         ccPage.get_by_placeholder("Search here").click()
         ccPage.get_by_placeholder("Search here").fill(serialNumber)
+        time.sleep(1)
         ccPage.get_by_placeholder("Search here").press("Enter")
-        ccPage.get_by_role("link", name=f" {serialNumber}").click()
         ccPage.get_by_role("button", name="Logistics").click()
         ccPage.get_by_role("link", name="Move to different stock").click()
         if customer_info['stockLocation'] == 'RentalStock' or customer_info['stockLocation'] == 'RentalSwapStock':
@@ -73,5 +78,4 @@ class CC:
         ccPage.get_by_role("button", name="Move").click()
 
 
-#KAN MAN ANVÄNDA BEARER FRÅN CCPAGE? 
         

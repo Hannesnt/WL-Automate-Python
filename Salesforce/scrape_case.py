@@ -44,11 +44,27 @@ class ScrapeCaseData:
         time.sleep(1)
         salesforcePage.locator("label").filter(has_text="To").click()
         time.sleep(1)
+        if service_and_repair:
+            salesforcePage.locator("label").filter(has_text="To").fill("diana.stjernquist@worldline.com")
+            time.sleep(1)
+            salesforcePage.locator("label").filter(has_text="To").press("Enter")
+            time.sleep(1)
+            salesforcePage.locator("a").filter(has_text="To,no-reply@worldline-").get_by_label(",Press delete or backspace to").click()
+            time.sleep(1)
+            salesforcePage.locator("button").filter(has_text="Send").click()
+            time.sleep(3)
+        salesforcePage.get_by_title("Send Email").click()
+        time.sleep(1)
+        salesforcePage.locator("label").filter(has_text="To").click()
+        time.sleep(1)
         salesforcePage.locator("label").filter(has_text="To").fill(customer_info["email"])
         time.sleep(1)
         salesforcePage.get_by_title("Post", exact=True).click()
         time.sleep(1)
         salesforcePage.get_by_label("Share an update...").click()
+        if service_and_repair:
+            salesforcePage.get_by_label("Share an update...").fill(f"S/N: {serial_numbers_str} \n\nDHL WAYBILL: \nDHL RETURN WAYBILL:")
+
         if service_and_repair == False:
             if customer_info["country"] == "NO":
                 if customer_info["subject"] == "ST" or customer_info["subject"] == "MMSW" or customer_info["subject"] == "SR": 
@@ -81,7 +97,10 @@ class ScrapeCaseData:
             time.sleep(2)
         elif service_and_repair:
             salesforcePage.get_by_role("button", name="Select a List View: Cases").click()
-            salesforcePage.get_by_role("option", name="Selected Logistics - Service & Repair").click()
+            try:
+                salesforcePage.get_by_role("option", name="Selected Logistics - Service & Repair").click()
+            except: 
+                salesforcePage.get_by_role("option", name="Logistics - Service & Repair").click()
         salesforcePage.get_by_role("link", name=caseNumber).click()
 
     def service_and_repair_scrape(self, soup, customer_info):
@@ -105,8 +124,12 @@ class ScrapeCaseData:
                 sr_address_data_list = sr_address_data.split('\n\n')
                 customer_info['name'] = sr_address_data_list[0]
                 customer_info['address'] = sr_address_data_list[1]
-                customer_info['zip'] = sr_address_data_list[2].split(' ')[0]
-                customer_info['county'] = sr_address_data_list[2].split(' ')[1]
+                if len(sr_address_data_list[2].split(' ')) > 2:
+                    customer_info['zip'] = sr_address_data_list[2].split(' ')[0] + sr_address_data_list[2].split(' ')[1]
+                    customer_info['county'] = sr_address_data_list[2].split(' ')[2]
+                else:
+                    customer_info['zip'] = sr_address_data_list[2].split(' ')[0]
+                    customer_info['county'] = sr_address_data_list[2].split(' ')[1]
         customer_info['subject'] = "SR"
         sr_spans = soup.find_all('span')
         for span in sr_spans:
@@ -228,4 +251,4 @@ class ScrapeCaseData:
         elif customer_info['country'] == "NO":
             salesforcePage.get_by_role('option', name='Contact Center Norway').click()
         time.sleep(1)
-        #salesforcePage.get_by_role("button", name="Save").click()
+        salesforcePage.get_by_role("button", name="Save").click()
