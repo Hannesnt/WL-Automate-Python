@@ -3,14 +3,14 @@ from playwright.sync_api import Playwright, sync_playwright
 from bs4 import BeautifulSoup
 import time
 import tkinter as tk
-
-from tkinter import simpledialog
-from tkinter import messagebox
+import threading
+from tkinter import simpledialog, messagebox, ttk
 from Salesforce import ScrapeCaseData
 from CC import CC
 from DHL import DHLWaybill
 from PostNord import PostNordWaybill
 def run(playwright: Playwright, serialNumbers, caseNumber, rental, mm_swap, service_and_repair) -> None:
+
     salesForce = ScrapeCaseData()
     cc = CC()
     dhl = DHLWaybill()
@@ -34,7 +34,6 @@ def run(playwright: Playwright, serialNumbers, caseNumber, rental, mm_swap, serv
             dhlPage = page
         if "unifaun" in page.url:
             unifaunPage = page
-   
     if salesforcePage == "Salesforce":
         messagebox.showinfo("Information", "Salesforce is not opened")
         return None
@@ -79,53 +78,70 @@ def set_service_and_repair():
     root.destroy()
 
 def get_terminal_inputs():
-    global serialNumbers, caseNumber
-
-    try:
-        amountOfTerminals = simpledialog.askinteger("Input", "Enter the amount of terminals")
-        serialNumbers = []
-        for i in range(amountOfTerminals):
+    global serialNumbers, caseNumber, root, rental, mm_swap, service_and_repair
+    
+    root = tk.Tk()
+    window_width = 300
+    window_height = 200
+    root.geometry(f'{window_width}x{window_height}')
+    root.title("Choice Selection")
+    rental_button = tk.Button(root, text="Rental", command=set_rental)
+    rental_button.pack(pady=15)
+    mm_swap_button = tk.Button(root, text="MM SWAP", command=set_mm_swap)
+    mm_swap_button.pack(pady=15)
+    mm_swap_button = tk.Button(root, text="Service & Repair", command=set_service_and_repair)
+    mm_swap_button.pack(pady=15)
+    root.mainloop() 
+    if rental or mm_swap or service_and_repair:
+        try:
+            amountOfTerminals = simpledialog.askinteger("Input", "Enter the amount of terminals")
+            serialNumbers = []
+            for i in range(amountOfTerminals):
+                serials_list = "\n".join(serialNumbers)
+                serialN = simpledialog.askstring("Input", f"Amount of terminals: {amountOfTerminals}\n{serials_list}\nEnter a TERMINAL S/N")
+                serialNumbers.append(serialN)
             serials_list = "\n".join(serialNumbers)
-            serialN = simpledialog.askstring("Input", f"Amount of terminals: {amountOfTerminals}\n{serials_list}\nEnter a TERMINAL S/N")
-            serialNumbers.append(serialN)
-        serials_list = "\n".join(serialNumbers)
-        caseNumber = simpledialog.askstring("Input", f"Amount of terminals: {amountOfTerminals}\nS/N: {serials_list}\nEnter the CASE NUMBER")
-    except Exception as e:
-        messagebox.showinfo("Error", f"Error occurred: {e}")
+            caseNumber = simpledialog.askstring("Input", f"Amount of terminals: {amountOfTerminals}\nS/N: {serials_list}\nEnter the CASE NUMBER")
+        except Exception as e:
+            messagebox.showinfo("Error", f"Error occurred: {e}")
+
+
 
 def run_playwright():
     with sync_playwright() as playwright:
         run(playwright, serialNumbers, caseNumber, rental, mm_swap, service_and_repair)
 
 def main():
-    global root, rental, mm_swap, serialNumbers, caseNumber, service_and_repair
-
+    global rental, mm_swap, serialNumbers, caseNumber, service_and_repair
     while True:
-        rental = False  
-        mm_swap = False
-        service_and_repair = False
-        serialNumbers = []
-        caseNumber = ""
+        try:
+            rental = False  
+            mm_swap = False
+            service_and_repair = False
+            serialNumbers = []
+            caseNumber = ""
 
-        root = tk.Tk()
-        window_width = 300
-        window_height = 200
-        root.geometry(f'{window_width}x{window_height}')
-        root.title("Choice Selection")
-        rental_button = tk.Button(root, text="Rental", command=set_rental)
-        rental_button.pack(pady=15)
-        mm_swap_button = tk.Button(root, text="MM SWAP", command=set_mm_swap)
-        mm_swap_button.pack(pady=15)
-        mm_swap_button = tk.Button(root, text="Service & Repair", command=set_service_and_repair)
-        mm_swap_button.pack(pady=15)
-        root.mainloop()  # Start the GUI event loop
+            # root = tk.Tk()
+            # window_width = 300
+            # window_height = 200
+            # root.geometry(f'{window_width}x{window_height}')
+            # root.title("Choice Selection")
+            # rental_button = tk.Button(root, text="Rental", command=set_rental)
+            # rental_button.pack(pady=15)
+            # mm_swap_button = tk.Button(root, text="MM SWAP", command=set_mm_swap)
+            # mm_swap_button.pack(pady=15)
+            # mm_swap_button = tk.Button(root, text="Service & Repair", command=set_service_and_repair)
+            # mm_swap_button.pack(pady=15)
+            # root.mainloop()  # Start the GUI event loop
 
-        if rental or mm_swap or service_and_repair:
             get_terminal_inputs()
             if serialNumbers and caseNumber:
                 run_playwright()
 
-        messagebox.showinfo("Alert", "Process completed. Restarting...")
+            messagebox.showinfo("Alert", "Process completed. Restarting...")
+        except Exception as e:
+            messagebox.showinfo("Error", f"Error occurred: {e}")
+    
 
 if __name__ == '__main__':
     main()

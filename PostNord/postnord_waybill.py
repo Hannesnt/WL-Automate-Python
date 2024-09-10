@@ -2,13 +2,10 @@ import time
 
 class PostNordWaybill:
     def create_postnord_waybill(self, unifaunPage, serialNumbers, customer_info, caseNumber, default_context):
-
         self.edit_page_language_postnord(unifaunPage)
-
+    
         self.shipping_box_postnord(unifaunPage, serialNumbers, customer_info, False)
-        
         self.add_customer_data_postnord(unifaunPage, customer_info)
-        
         self.shipment_reference_postnord(unifaunPage, customer_info, serialNumbers, caseNumber, False)
 
         self.dangerous_goods_postnord(unifaunPage, serialNumbers, customer_info, False)
@@ -29,11 +26,14 @@ class PostNordWaybill:
 
             self.edit_page_language_postnord(return_label_page)
             self.shipping_box_postnord(return_label_page, serialNumbers, customer_info, True)
+        
             self.add_customer_data_postnord(return_label_page, customer_info)
             self.shipment_reference_postnord(return_label_page, customer_info, serialNumbers, caseNumber, True)
+
             self.dangerous_goods_postnord(return_label_page, serialNumbers, customer_info, True)
             self.label_amount_postnord(return_label_page, serialNumbers)
             return_label_page.get_by_role("button", name="Print PDF").nth(1).click()
+
     
     def label_amount_postnord(self, unifaunPage, serialNumbers):
         unifaunPage.locator("input[name=\"ParcelGroupCount\"]").click()
@@ -57,12 +57,18 @@ class PostNordWaybill:
         unifaunPage.locator("input[name=\"ShipmentSndReference\"]").click()
         if customer_info['subject'] == "ST" or customer_info["subject"] == "MMSW" or customer_info["subject"] == "SR":
             if return_label == False:
-                unifaunPage.locator("input[name=\"ShipmentSndReference\"]").fill(f"{customer_info['country'][0]}{customer_info['country'][1]} {customer_info['subject']} {len(serialNumbers)} {customer_info['model'][0]} - {caseNumber}")
+                if "move" in customer_info['model'].lower() or "lane" in customer_info['model'].lower():
+                    unifaunPage.locator("input[name=\"ShipmentSndReference\"]").fill(f"{customer_info['country'][0]}{customer_info['country'][1]} {customer_info['subject']} {len(serialNumbers)} {customer_info['model'][0]} - {caseNumber}")
+                else:
+                    unifaunPage.locator("input[name=\"ShipmentSndReference\"]").fill(f"{customer_info['country'][0]}{customer_info['country'][1]} {customer_info['subject']} {len(serialNumbers)} {customer_info['model']} - {caseNumber}")
                 unifaunPage.locator("input[name=\"AddonsPRENOT\"]").check()
                 unifaunPage.locator("input[name=\"AddonsDLVNOT\"]").check()
                 unifaunPage.locator("input[name=\"AddonsPODNOT\"]").check()
             else:
-                unifaunPage.locator("input[name=\"ShipmentSndReference\"]").fill(f"{customer_info['country'][0]}{customer_info['country'][1]} R {customer_info['subject']} {len(serialNumbers)} {customer_info['model'][0]} - {caseNumber}")
+                if "move" in customer_info['model'].lower() or "lane" in customer_info['model'].lower():
+                    unifaunPage.locator("input[name=\"ShipmentSndReference\"]").fill(f"{customer_info['country'][0]}{customer_info['country'][1]} R {customer_info['subject']} {len(serialNumbers)} {customer_info['model'][0]} - {caseNumber}")
+                else:
+                    unifaunPage.locator("input[name=\"ShipmentSndReference\"]").fill(f"{customer_info['country'][0]}{customer_info['country'][1]} R {customer_info['subject']} {len(serialNumbers)} {customer_info['model']} - {caseNumber}")
         else: 
             unifaunPage.locator("input[name=\"ShipmentSndReference\"]").fill(f"{customer_info['country'][0]}{customer_info['country'][1]} {customer_info['subject'][0]} {len(serialNumbers)} {customer_info['model'][0]} - {caseNumber}")
             unifaunPage.locator("input[name=\"AddonsPRENOT\"]").check()
@@ -81,8 +87,10 @@ class PostNordWaybill:
             unifaunPage.locator("select[name=\"RECEIVERDeliveryCountry\"]").select_option("FI")
         unifaunPage.locator("input[name=\"RECEIVERDeliveryZipcode\"]").click()
         unifaunPage.locator("input[name=\"RECEIVERDeliveryZipcode\"]").fill(customer_info["zip"])
-        unifaunPage.locator("input[name=\"RECEIVERDeliveryCity\"]").click()
-        unifaunPage.locator("input[name=\"RECEIVERDeliveryCity\"]").fill(customer_info['county'])
+        time.sleep(1)
+        #Prova utan nedre, låta den välja län själv
+        #unifaunPage.locator("input[name=\"RECEIVERDeliveryCity\"]").click()
+        #unifaunPage.locator("input[name=\"RECEIVERDeliveryCity\"]").fill(customer_info['county'])
         unifaunPage.locator("div:nth-child(6) > .caption-row > .caption-row-entry").click()
         unifaunPage.locator("input[name=\"RECEIVERPhone\"]").click()
         unifaunPage.locator("input[name=\"RECEIVERPhone\"]").fill(customer_info["phone"])

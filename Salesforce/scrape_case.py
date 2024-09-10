@@ -10,6 +10,7 @@ class ScrapeCaseData:
         customer_info = {}
 
         if rental or service_and_repair: 
+            #web_component = salesforcePage.locator('emailui-rich-text-output').all()
             web_component = salesforcePage.locator('emailui-rich-text-output').get_attribute('value')
             if web_component:
                 soup = BeautifulSoup(web_component, 'html.parser')
@@ -22,9 +23,9 @@ class ScrapeCaseData:
                 print("emailui-rich-text-output value was not found or is empty.")  
         
         elif mm_swap:
-            
             web_component = salesforcePage.locator('div.forceChatterMessageSegments').nth(0).inner_html()
             if web_component:
+            
                 soup = BeautifulSoup(web_component, 'html.parser')
                 paragraphs = soup.find_all('p')
                 customer_info['subject'] = "MMSW"
@@ -38,13 +39,13 @@ class ScrapeCaseData:
                 self.mm_follow_up(salesforcePage, customer_info)
             else:
                 print("MM Swap data was not found or is empty.")                
-
-        time.sleep(1)
-        salesforcePage.get_by_title("Send Email").click()
-        time.sleep(1)
-        salesforcePage.locator("label").filter(has_text="To").click()
-        time.sleep(1)
+    
         if service_and_repair:
+            time.sleep(1)
+            salesforcePage.get_by_title("Send Email").click()
+            time.sleep(1)
+            salesforcePage.locator("label").filter(has_text="To").click()
+            time.sleep(1)
             salesforcePage.locator("label").filter(has_text="To").fill("diana.stjernquist@worldline.com")
             time.sleep(1)
             salesforcePage.locator("label").filter(has_text="To").press("Enter")
@@ -54,16 +55,28 @@ class ScrapeCaseData:
             salesforcePage.locator("button").filter(has_text="Send").click()
             time.sleep(3)
         salesforcePage.get_by_title("Send Email").click()
+    
         time.sleep(1)
         salesforcePage.locator("label").filter(has_text="To").click()
         time.sleep(1)
         salesforcePage.locator("label").filter(has_text="To").fill(customer_info["email"])
         time.sleep(1)
+    
         salesforcePage.get_by_title("Post", exact=True).click()
         time.sleep(1)
         salesforcePage.get_by_label("Share an update...").click()
         if service_and_repair:
             salesforcePage.get_by_label("Share an update...").fill(f"S/N: {serial_numbers_str} \n\nDHL WAYBILL: \nDHL RETURN WAYBILL:")
+            salesforcePage.get_by_title("Click, or press Ctrl+Enter").click()
+            time.sleep(1)
+            salesforcePage.get_by_title("Follow Up Date").click()
+            time.sleep(1)
+            salesforcePage.get_by_label("Follow Up Date").click()
+            followup_date = date.today() + timedelta(days=14)
+            salesforcePage.get_by_label("Follow Up Date").fill(f"{followup_date}")
+            time.sleep(1)
+            salesforcePage.locator("button").filter(has_text="Save").nth(3).click()
+            time.sleep(1)
 
         if service_and_repair == False:
             if customer_info["country"] == "NO":
@@ -76,6 +89,8 @@ class ScrapeCaseData:
                     salesforcePage.get_by_label("Share an update...").fill(f"S/N: {serial_numbers_str} \n\nPOSTNORD WAYBILL: \nPOSTNORD RETURN WAYBILL:")
                 else:
                     salesforcePage.get_by_label("Share an update...").fill(f"S/N: {serial_numbers_str} \n\nPOSTNORD WAYBILL: ")
+            #salesforcePage.get_by_title("Click, or press Ctrl+Enter").click()
+            time.sleep(2)          
         return customer_info
 
     def get_case(self, salesforcePage, caseNumber, rental, mm_swap, service_and_repair):
@@ -114,7 +129,7 @@ class ScrapeCaseData:
                     sr_merchant_data = match.group(1)
                     sr_merchant_data_list = sr_merchant_data.split('\n\n')[1].split(' ')
                     customer_info['email'] = sr_merchant_data_list[0].strip()
-                    customer_info['phone'] = sr_merchant_data_list[1].replace('(', '').replace(')', '').replace('-', '').strip()
+                    customer_info['phone'] = sr_merchant_data_list[1].replace('(', '').replace(')', '').replace('-', '').replace(' ','').strip()
                 address_pattern = r"Delivery address:\s*(.*?)\s*Terminal info"
                 match = re.search(address_pattern, sr_address_data, re.DOTALL)
                 if match:
@@ -136,7 +151,10 @@ class ScrapeCaseData:
             if self.match_span(span, "Terminal ID:"):
                 customer_info['serialNumber'] = span.get_text().split(' ')[2]
             elif self.match_span(span, "Terminal model:"):
-                customer_info['model'] = span.get_text().split(' ')[3]
+                if span.get_text().split(' ')[3] == "IWL250":
+                    customer_info['model'] = span.get_text().split(' ')[4]
+                else:
+                    customer_info['model'] = span.get_text().split(' ')[3]
             elif self.match_span(span, "License ID:"):
                 customer_info['license'] = span.get_text().split(' ')[2]
             elif self.match_span(span, "Keep alive:"):
@@ -190,8 +208,7 @@ class ScrapeCaseData:
                     customer_info['zip'] = customer_rows[9].split(' ')[0]
                 customer_info['county'] = customer_rows[9].split(' ')[1]
                 customer_info['phone'] = customer_rows[14]
-                customer_info['email'] = customer_rows[16]
-
+                customer_info['email'] = customer_rows[15]
             if customer_span and terminal_span and lang_span != None:
                 break
 
@@ -215,9 +232,10 @@ class ScrapeCaseData:
                 model = paragraphs[i + 2].get_text()
                 terminal_model_list = model.split(" ")
                 customer_info[customer_info_key] = terminal_model_list[1]
-                model = paragraphs[i + 3].get_text()
+                model = paragraphs[i + 3].get_text().replace(',', '')
                 terminal_model_list = model.split(" ")
-                customer_info['license'] = [terminal_model_list[2]]
+                customer_info['license'] = terminal_model_list[2:]
+
             elif i + 1 < len(paragraphs):
                 next_paragraph_text = paragraphs[i + 1].get_text()
                 customer_info[customer_info_key] = next_paragraph_text
@@ -251,4 +269,4 @@ class ScrapeCaseData:
         elif customer_info['country'] == "NO":
             salesforcePage.get_by_role('option', name='Contact Center Norway').click()
         time.sleep(1)
-        salesforcePage.get_by_role("button", name="Save").click()
+        #salesforcePage.get_by_role("button", name="Save").click()

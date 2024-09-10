@@ -1,19 +1,19 @@
 class DHLWaybill:
     def create_dhl_waybill(self, dhl_page, customer_info, serialNumbers, caseNumber, default_context):
-        
+    
         self.add_customer_data_dhl(dhl_page, customer_info, False)
-
+    
         if customer_info['country'] == "NO":
-            self.goods_description_dhl(dhl_page, serialNumbers, customer_info)
+            self.goods_description_dhl(dhl_page, serialNumbers)
 
         self.dhl_label_amount(dhl_page, serialNumbers)
-
+    
         self.shipment_reference_dhl(dhl_page, customer_info, serialNumbers, caseNumber, False)
         if customer_info['country'] == "NO":
             self.dhl_label_amount_dangerous_goods(dhl_page, customer_info, serialNumbers)
 
-        self.print_label_dhl(dhl_page, customer_info)
-
+        self.print_label_dhl(dhl_page, customer_info, False)
+    
         if customer_info["subject"] == "ST" or customer_info["subject"] == "MMSW" or customer_info["subject"] == "SR":
             dhl_return_label = default_context.new_page()
             dhl_return_label.goto("https://mydhl.express.dhl/se/sv/home.html?login=successful#/createNewShipmentTab")
@@ -22,16 +22,18 @@ class DHLWaybill:
                 self.goods_description_dhl(dhl_return_label, serialNumbers)
 
             self.dhl_label_amount(dhl_return_label, serialNumbers)
-
+        
             self.shipment_reference_dhl(dhl_return_label, customer_info, serialNumbers, caseNumber, True)
             if customer_info['country'] == "NO":
                 self.dhl_label_amount_dangerous_goods(dhl_return_label, customer_info, serialNumbers)
 
-            self.print_label_dhl(dhl_return_label, customer_info)
+            self.print_label_dhl(dhl_return_label, customer_info, True)
+        
 
 
-    def print_label_dhl(self, dhl_page, customer_info):
-        dhl_page.locator("#ewfc-submit-blocker-element").get_by_text("Nej").click()
+    def print_label_dhl(self, dhl_page, customer_info, return_waybill):
+        if return_waybill == False:
+            dhl_page.locator("#ewfc-submit-blocker-element").get_by_text("Nej").click()
         dhl_page.get_by_role("button", name="Godkänn och fortsätt").click()
         if customer_info['country'] == "NO":
             dhl_page.get_by_text("Skicka in", exact=True).click()
@@ -42,9 +44,15 @@ class DHLWaybill:
         dhl_page.get_by_placeholder("Referens (kommer synas på").click()
         if customer_info['subject'] == "ST" or customer_info['subject'] == "MMSW" or customer_info["subject"] == "SR":
             if return_waybill == True:
-                dhl_page.get_by_placeholder("Referens (kommer synas på").fill(f"{customer_info['country'][0]}{customer_info['country'][1]} R {customer_info['subject']} {len(serialNumbers)} {customer_info['model'][0]} - {caseNumber}")
+                if "move" in customer_info['model'].lower() or "lane" in customer_info['model'].lower():
+                    dhl_page.get_by_placeholder("Referens (kommer synas på").fill(f"{customer_info['country'][0]}{customer_info['country'][1]} R {customer_info['subject']} {len(serialNumbers)} {customer_info['model'][0]} - {caseNumber}")
+                else:
+                    dhl_page.get_by_placeholder("Referens (kommer synas på").fill(f"{customer_info['country'][0]}{customer_info['country'][1]} R {customer_info['subject']} {len(serialNumbers)} {customer_info['model']} - {caseNumber}")
             else:
-                dhl_page.get_by_placeholder("Referens (kommer synas på").fill(f"{customer_info['country'][0]}{customer_info['country'][1]} {customer_info['subject']} {len(serialNumbers)} {customer_info['model'][0]} - {caseNumber}")
+                if "move" in customer_info['model'].lower() or "lane" in customer_info['model'].lower():
+                    dhl_page.get_by_placeholder("Referens (kommer synas på").fill(f"{customer_info['country'][0]}{customer_info['country'][1]} {customer_info['subject']} {len(serialNumbers)} {customer_info['model'][0]} - {caseNumber}")
+                else:
+                    dhl_page.get_by_placeholder("Referens (kommer synas på").fill(f"{customer_info['country'][0]}{customer_info['country'][1]} {customer_info['subject']} {len(serialNumbers)} {customer_info['model']} - {caseNumber}")
         else:
             dhl_page.get_by_placeholder("Referens (kommer synas på").fill(f"{customer_info['country'][0]}{customer_info['country'][1]} {customer_info['subject'][0]} {len(serialNumbers)} {customer_info['model'][0]} - {caseNumber}")
         if customer_info['country'] == "NO":
@@ -85,18 +93,40 @@ class DHLWaybill:
         dhl_page.get_by_label("Obligatorisk", exact=True).fill(customer_info["county"])
         dhl_page.get_by_role("textbox", name="E-postadress", exact=True).click()
         dhl_page.get_by_role("textbox", name="E-postadress", exact=True).fill(customer_info["email"])
-        truncatedPhoneNumber = customer_info["phone"][3:]
+        truncated_phone = self.truncate_phonenumber(customer_info)
+        self.add_underscore_dhl_phone(truncated_phone)
         if customer_info['country'] == "SE": 
             dhl_page.get_by_label("Telefon Obligatorisk").click()
-            dhl_page.get_by_label("Telefon Obligatorisk").fill(f"{truncatedPhoneNumber}____")
-
+            dhl_page.get_by_label("Telefon Obligatorisk").fill(f"{truncated_phone}")
         else:
             dhl_page.get_by_placeholder("__ __ __ _______").click()
-            dhl_page.get_by_placeholder("__ __ __ _______").fill(f"{truncatedPhoneNumber}____")
+            dhl_page.get_by_placeholder("__ __ __ _______").fill(f"{truncated_phone}")
         if return_waybill:
             dhl_page.get_by_role("button", name=" Skifta").click()
 
-
+    def add_underscore_dhl_phone(self, truncated_phone):
+        phone_with_underscore = truncated_phone
+        for i in range(13 - len(truncated_phone)):
+            phone_with_underscore = phone_with_underscore + "_"
+    def truncate_phonenumber(self, customer_info):
+        truncatedPhoneNumber = None
+        if customer_info['phone'].startswith('+') and customer_info['country'] == "FI":
+           truncatedPhoneNumber = customer_info["phone"][4:]
+        elif customer_info['phone'].startswith('+'):
+            truncatedPhoneNumber = customer_info["phone"][3:]
+        elif customer_info['country'].lower() == "fi" and customer_info['phone'].startswith("358"):
+            truncatedPhoneNumber = customer_info["phone"][3:]
+        elif customer_info['country'].lower() == "dk" and customer_info['phone'].startswith("45"):
+            truncatedPhoneNumber = customer_info["phone"][2:]
+        elif customer_info['country'].lower() == "no" and customer_info['phone'].startswith("47"):
+            truncatedPhoneNumber = customer_info["phone"][2:]
+        elif customer_info['country'].lower() == "se" and customer_info['phone'].startswith("46"):
+            truncatedPhoneNumber = customer_info["phone"][2:]
+        elif customer_info['phone'].startswith("0"):
+            truncatedPhoneNumber = customer_info["phone"][1:]
+        else: 
+            truncatedPhoneNumber = customer_info["phone"]
+        return truncatedPhoneNumber
     def dhl_label_amount(self, dhl_page, serialNumbers):
         if len(serialNumbers) > 74:
             dhl_page.locator("#shipment-type").get_by_label("Antal").fill("5")

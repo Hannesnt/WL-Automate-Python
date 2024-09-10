@@ -12,13 +12,10 @@ def ccScrape(browser, merchant):
     response = requests.get(url, headers=headers)
 
     if response.status_code == 200:
-        # Parse JSON response
+
         data = response.json()
-        
-        # Process and print or use the data as needed
         return data
-        print("Data retrieved:")
-        print(data['id'])
+
     else:
         browser.close()
   

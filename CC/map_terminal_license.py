@@ -2,7 +2,7 @@ import time
 import requests
 import json
 class CC:
-    def map_terminal_license(self, serialNumbers, ccPage, customer_info):
+    def map_terminal_license(self, serialNumbers, ccPage, customer_info, ):
         for sn in range(len(serialNumbers)):
             ccPage.get_by_placeholder("Search here").click()
             ccPage.get_by_placeholder("Search here").fill(serialNumbers[sn])
@@ -15,6 +15,7 @@ class CC:
             ccPage.locator("#DeliverTerminal").get_by_role("textbox").fill(customer_info['license'][sn])
             ccPage.get_by_role("button", name="Deliver").click()
             time.sleep(2)
+        
     def sr_handle_merchant(self, serialNumbers, ccPage, customer_info):
         token = ccPage.evaluate("window.sessionStorage.getItem('instore-api-token')")
         if token:
@@ -33,10 +34,8 @@ class CC:
                     customer_info['stockLocation'] = data['logistics']['stock']['stockLocation']['name']
             except:
                 print("Couldnt fetch cc")
-
         self.change_terminal_stock(ccPage, customer_info, serialNumbers[0])
         time.sleep(2)
-
         if customer_info['keepAlive'] == False:
             ccPage.get_by_placeholder("Search here").click()
             ccPage.get_by_placeholder("Search here").fill(customer_info['serialNumber'])
